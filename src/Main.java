@@ -17,44 +17,73 @@ import java.util.concurrent.Semaphore;
         }
 
         /**
-         * Se crea el acquire y el release para decir donde irá el semáforo, dentro se coloca dos String
-         * para saber cuando empieza y termina cada hilo.
+         * Si hay hueco en la carnicería los hilos se van metiendo ahí y en caso contario se meten en la charcutería,
+         * lo mismo pasa al revés. Cuando entran en cada uno de ellos, dependiendo si es la carnicería o la
+         * charcutería se pondrá una variable a true, para indicar que ya fue atendido ahí. Una vez que es atendido
+         * en ambos sitios, se interrumpe el hilo.
          */
         @Override
         public void run() {
 
             boolean esAtendidoCarniceria=false;
             boolean esAtendidoCharcuteria=false;
-            try {
 
-                while (carnicería.availablePermits() != 0 ||  charcutería.availablePermits() != 0) {
-
-                    if(!esAtendidoCarniceria) {
-                        carnicería.acquire();
-                        System.out.println(Thread.currentThread().getName() + "Está siendo atendido en la Carnicería");
-                        Thread.sleep((int) (Math.random() * 10000));
-                        System.out.println(Thread.currentThread().getName() + "Ha terminado de ser atendido en la Carnicería");
-                        carnicería.release();
+                    if(carnicería.availablePermits()!=0) {
+                        carniceria();
 
                         esAtendidoCarniceria=true;
-                    }
-                    if(!esAtendidoCharcuteria) {
-                        charcutería.acquire();
-                        System.out.println(Thread.currentThread().getName() + "Está siendo atendido en la Charcutería");
-                        Thread.sleep((int) (Math.random() * 10000));
-                        System.out.println(Thread.currentThread().getName() + "Ha terminado de ser atendido en la Charcutería");
-                        charcutería.release();
+
+                    }else {
+                        charcuteria();
                         esAtendidoCharcuteria=true;
+                    }
+
+                    if(charcutería.availablePermits()!=0){
+                        charcuteria();
+                        esAtendidoCharcuteria=true;
+                    }else {
+                        carniceria();
+
+                        esAtendidoCarniceria=true;
                     }
 
                     if(esAtendidoCarniceria && esAtendidoCharcuteria){
                         Thread.interrupted();
                     }
-                }
 
 
+        }
+
+
+       /**
+        * Método para que ser atendido en la carniceríaa
+        */
+       public void carniceria(){
+            try {
+                carnicería.acquire();
+
+            System.out.println(Thread.currentThread().getName() + "Está siendo atendido en la Carnicería");
+            Thread.sleep((int) (Math.random() * 10000));
+            System.out.println(Thread.currentThread().getName() + "Ha terminado de ser atendido en la Carnicería");
+            carnicería.release();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+
+       /**
+        * Igual que el anterior para ser atendido en la charcutería
+        */
+
+       public  void charcuteria(){
+            try {
+                charcutería.acquire();
+                System.out.println(Thread.currentThread().getName() + "Está siendo atendido en la Charcutería");
+                Thread.sleep((int) (Math.random() * 10000));
+                System.out.println(Thread.currentThread().getName() + "Ha terminado de ser atendido en la Charcutería");
+                charcutería.release();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
             }
 
         }
